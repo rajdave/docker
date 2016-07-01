@@ -1,5 +1,20 @@
 # SUSE Docker challenge 01:
 
+# OS information
+<snip>
+rdave@linux-dwta:~/Documents/docker> cat /etc/os-release 
+NAME=openSUSE
+VERSION="13.2 (Harlequin)"
+VERSION_ID="13.2"
+PRETTY_NAME="openSUSE 13.2 (Harlequin) (x86_64)"
+ID=opensuse
+ANSI_COLOR="0;32"
+CPE_NAME="cpe:/o:opensuse:opensuse:13.2"
+BUG_REPORT_URL="https://bugs.opensuse.org"
+HOME_URL="https://opensuse.org/"
+ID_LIKE="suse"
+</snip>
+
 # The container is setup using the following Docker file
 <snip>
 rdave@linux-dwta:/docker> cat /docker/suse_01/Dockerfile 
