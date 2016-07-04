@@ -1,0 +1,80 @@
+# SUSE Docker challenge 01:
+
+# OS information
+<snip>
+rdave@linux-dwta:~/Documents/docker> cat /etc/os-release 
+NAME=openSUSE
+VERSION="13.2 (Harlequin)"
+VERSION_ID="13.2"
+PRETTY_NAME="openSUSE 13.2 (Harlequin) (x86_64)"
+ID=opensuse
+ANSI_COLOR="0;32"
+CPE_NAME="cpe:/o:opensuse:opensuse:13.2"
+BUG_REPORT_URL="https://bugs.opensuse.org"
+HOME_URL="https://opensuse.org/"
+ID_LIKE="suse"
+</snip>
+
+# The container is setup using the following Docker file
+<snip>
+rdave@linux-dwta:/docker> cat /docker/suse_01/Dockerfile 
+FROM busybox
+RUN touch /hello
+RUN boom
+</snip>
+
+# Docker build cmdline output:
+<snip>
+rdave@linux-dwta:/docker> docker build -t rdave/suse_01 /docker/suse_01/
+Sending build context to Docker daemon 2.048 kB
+Step 1 : FROM busybox
+latest: Pulling from library/busybox
+a5d4c53980c6: Pull complete 
+b41c5284db84: Pull complete ls
+
+Digest: sha256:65ce39ce3eb0997074a460adfb568d0b9f0f6a4392d97b6035630c9d7bf92402
+Status: Downloaded newer image for busybox:latest
+ ---> b41c5284db84
+Step 2 : RUN touch /hello
+ ---> Running in ab0187e0833a
+ ---> 6e53fa8eaf5a
+Removing intermediate container ab0187e0833a
+Step 3 : RUN boom
+ ---> Running in 3aa48e0e0525
+/bin/sh: boom: not found
+The command '/bin/sh -c boom' returned a non-zero code: 127
+</snip>
+
+# Some relevant command output
+<snip>
+rdave@linux-dwta:/docker> docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+<none>              <none>              6e53fa8eaf5a        34 seconds ago      1.093 MB
+busybox             latest              b41c5284db84        7 days ago          1.093 MB
+rdave@linux-dwta:/docker> docker ps -a
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                        PORTS               NAMES
+3aa48e0e0525        6e53fa8eaf5a        "/bin/sh -c boom"   42 seconds ago      Exited (127) 41 seconds ago                       elegant_mirzakhani
+</snip>
+
+# Analysis: (Analysing the build process)
+- The build context from the Dockerfile is given to docker daemon.
+- The build proceeds in various steps
+- "FROM busybox" statement states that the container would be built using the busybox image. The daemon would first search locally and if not found it would check in the public docker hub repositories.
+- It started pulling the busybox image to host.
+- The completed successfully and the digest is displayed.
+- Status is rendered with the latest tag.
+- The control moves to the next statement mentioned in the Dockerfile, i.e. "RUN touch /hello"
+- This step would try to run the touch command using the output of the previous step, trying to create a new hello file in / directory.
+- The ouput is displayed stating the intermideate container id.
+- The output is saved and the intermediate container is removed
+- The control proceed to the next statement in the Dockerfile, i.e. "RUN boom" 
+- This step would try to find and run a command named boom.
+- The intermediate container id is displayed.
+- "/bin/sh: boom: not found": It stated that the shell want unable to find the boom command executable in the predefined locations as mentioned in the $PATH environment variable.
+- The next line states the command that was run inside the container and the error it rendered. Lets have a look at it.
+-- "/bin/sh -c boom" : This statement states that the shell tried to run the command boom using the -c paramenter which is described as follows,
+----  If the -c option is present, then commands are read from the first non-option argument command_string. If there are arguments after the command_string, they are assigned to the positional parameters, starting with $0.
+- Examining further we find that the command return an error code i.e. 127. Here is a brief description of the error code 127, 
+-- 127	"command not found"	illegal_command	Possible problem with $PATH or a typo
+
+Conclusion: The above analysis indicates that there was an error during the build process due to an illegal command. This could be because of a typo error or the relavant packages is not installed in the system or the relevant location of the installed package is not updated in the $PATH environment variable and hence the system was unable to locate the required binary pertaining the boom command at the locations defined by the $PATH variable.
